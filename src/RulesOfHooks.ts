@@ -560,6 +560,6 @@ function getFunctionName(node: ts.Node): ts.Identifier | undefined {
  * Convenience function for peeking the last item in a stack.
  */
 
-function last(array) {
+function last<T>(array: T[]): T | undefined {
   return array[array.length - 1];
 }
