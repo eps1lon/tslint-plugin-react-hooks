@@ -6,8 +6,9 @@
  */
 
 /* eslint-disable no-for-of-loops/no-for-of-loops */
+import * as ts from "typescript";
 
-'use strict';
+"use strict";
 
 /**
  * Catch all identifiers that begin with "use" followed by an uppercase Latin
@@ -23,18 +24,17 @@ function isHookName(s: string) {
  * containing a hook name.
  */
 
-function isHook(node) {
-  if (node.type === 'Identifier') {
-    return isHookName(node.name);
+function isHook(node: ts.Node): boolean {
+  if (ts.isIdentifier(node)) {
+    return isHookName(node.getText());
   } else if (
-    node.type === 'MemberExpression' &&
-    !node.computed &&
-    isHook(node.property)
+    ts.isPropertyAccessExpression(node) &&
+    isHook(node.name)
   ) {
     // Only consider React.useFoo() to be namespace hooks for now to avoid false positives.
     // We can expand this check later.
-    const obj = node.object;
-    return obj.type === 'Identifier' && obj.name === 'React';
+    const obj = node.expression;
+    return ts.isIdentifier(obj) && obj.getText() === "React";
   } else {
     return false;
   }
@@ -47,7 +47,7 @@ function isHook(node) {
  */
 
 function isComponentName(node) {
-  if (node.type === 'Identifier') {
+  if (node.type === "Identifier") {
     return !/^[a-z]/.test(node.name);
   } else {
     return false;
@@ -115,7 +115,7 @@ export default {
          */
 
         function countPathsFromStart(segment) {
-          const {cache} = countPathsFromStart;
+          const { cache } = countPathsFromStart;
           let paths = cache.get(segment.id);
 
           // If `paths` is null then we've found a cycle! Add it to `cyclic` and
@@ -177,7 +177,7 @@ export default {
          */
 
         function countPathsToEnd(segment) {
-          const {cache} = countPathsToEnd;
+          const { cache } = countPathsToEnd;
           let paths = cache.get(segment.id);
 
           // If `paths` is null then we've found a cycle! Add it to `cyclic` and
@@ -239,7 +239,7 @@ export default {
          */
 
         function shortestPathLengthToStart(segment) {
-          const {cache} = shortestPathLengthToStart;
+          const { cache } = shortestPathLengthToStart;
           let length = cache.get(segment.id);
 
           // If `length` is null then we found a cycle! Return infinity since
@@ -289,7 +289,7 @@ export default {
         // This is a valid code path for React hooks if we are direcly in a React
         // function component or we are in a hook function.
         const isSomewhereInsideComponentOrHook = isInsideComponentOrHook(
-          codePathNode,
+          codePathNode
         );
         const isDirectlyInsideComponentOrHook = codePathFunctionName
           ? isComponentName(codePathFunctionName) ||
@@ -377,9 +377,9 @@ export default {
               context.report(
                 hook,
                 `React Hook "${context.getSource(hook)}" may be executed ` +
-                  'more than once. Possibly because it is called in a loop. ' +
-                  'React Hooks must be called in the exact same order in ' +
-                  'every component render.',
+                  "more than once. Possibly because it is called in a loop. " +
+                  "React Hooks must be called in the exact same order in " +
+                  "every component render."
               );
             }
 
@@ -397,18 +397,18 @@ export default {
                 context.report(
                   hook,
                   `React Hook "${context.getSource(hook)}" is called ` +
-                    'conditionally. React Hooks must be called in the exact ' +
-                    'same order in every component render.' +
+                    "conditionally. React Hooks must be called in the exact " +
+                    "same order in every component render." +
                     (possiblyHasEarlyReturn
-                      ? ' Did you accidentally call a React Hook after an' +
-                        ' early return?'
-                      : ''),
+                      ? " Did you accidentally call a React Hook after an" +
+                        " early return?"
+                      : "")
                 );
               }
             } else if (
               codePathNode.parent &&
-              (codePathNode.parent.type === 'MethodDefinition' ||
-                codePathNode.parent.type === 'ClassProperty') &&
+              (codePathNode.parent.type === "MethodDefinition" ||
+                codePathNode.parent.type === "ClassProperty") &&
               codePathNode.parent.value === codePathNode
             ) {
               // Ignore class methods for now because they produce too many
@@ -422,10 +422,10 @@ export default {
                 hook,
                 `React Hook "${context.getSource(hook)}" is called in ` +
                   `function "${context.getSource(codePathFunctionName)}" ` +
-                  'which is neither a React function component or a custom ' +
-                  'React Hook function.',
+                  "which is neither a React function component or a custom " +
+                  "React Hook function."
               );
-            } else if (codePathNode.type === 'Program') {
+            } else if (codePathNode.type === "Program") {
               // For now, ignore if it's in top level scope.
               // We could warn here but there are false positives related
               // configuring libraries like `history`.
@@ -439,8 +439,8 @@ export default {
                 context.report(
                   hook,
                   `React Hook "${context.getSource(hook)}" cannot be called ` +
-                    'inside a callback. React Hooks must be called in a ' +
-                    'React function component or a custom React Hook function.',
+                    "inside a callback. React Hooks must be called in a " +
+                    "React function component or a custom React Hook function."
                 );
               }
             }
@@ -465,9 +465,9 @@ export default {
           }
           reactHooks.push(node.callee);
         }
-      },
+      }
     };
-  },
+  }
 };
 
 /**
@@ -480,8 +480,8 @@ export default {
 
 function getFunctionName(node) {
   if (
-    node.type === 'FunctionDeclaration' ||
-    (node.type === 'FunctionExpression' && node.id)
+    node.type === "FunctionDeclaration" ||
+    (node.type === "FunctionExpression" && node.id)
   ) {
     // function useHook() {}
     // const whatever = function useHook() {};
@@ -490,24 +490,24 @@ function getFunctionName(node) {
     // assignment statements or other renames.
     return node.id;
   } else if (
-    node.type === 'FunctionExpression' ||
-    node.type === 'ArrowFunctionExpression'
+    node.type === "FunctionExpression" ||
+    node.type === "ArrowFunctionExpression"
   ) {
     if (
-      node.parent.type === 'VariableDeclarator' &&
+      node.parent.type === "VariableDeclarator" &&
       node.parent.init === node
     ) {
       // const useHook = () => {};
       return node.parent.id;
     } else if (
-      node.parent.type === 'AssignmentExpression' &&
+      node.parent.type === "AssignmentExpression" &&
       node.parent.right === node &&
-      node.parent.operator === '='
+      node.parent.operator === "="
     ) {
       // useHook = () => {};
       return node.parent.left;
     } else if (
-      node.parent.type === 'Property' &&
+      node.parent.type === "Property" &&
       node.parent.value === node &&
       !node.parent.computed
     ) {
@@ -522,7 +522,7 @@ function getFunctionName(node) {
       // class {useHook = () => {}}
       // class {useHook() {}}
     } else if (
-      node.parent.type === 'AssignmentPattern' &&
+      node.parent.type === "AssignmentPattern" &&
       node.parent.right === node &&
       !node.parent.computed
     ) {
