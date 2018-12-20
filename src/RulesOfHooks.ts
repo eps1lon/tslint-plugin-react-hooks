@@ -453,8 +453,8 @@ export default {
       // `CallExpression`s and check that _every use_ of a hook name is valid.
       // But that gets complicated and enters type-system territory, so we're
       // only being strict about hook calls for now.
-      CallExpression(node) {
-        if (isHook(node.callee)) {
+      CallExpression(node: ts.CallExpression) {
+        if (isHook(node.expression)) {
           // Add the hook node to a map keyed by the code path segment. We will
           // do full code path analysis at the end of our code path.
           const reactHooksMap = last(codePathReactHooksMapStack);
@@ -464,7 +464,7 @@ export default {
             reactHooks = [];
             reactHooksMap.set(codePathSegment, reactHooks);
           }
-          reactHooks.push(node.callee);
+          reactHooks.push(node.expression);
         }
       }
     };
