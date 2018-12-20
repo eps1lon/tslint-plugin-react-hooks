@@ -46,9 +46,9 @@ function isHook(node: ts.Node): boolean {
  * are valid component names for instance.
  */
 
-function isComponentName(node) {
-  if (node.type === "Identifier") {
-    return !/^[a-z]/.test(node.name);
+function isComponentName(node: ts.Node): boolean {
+  if (ts.isIdentifier(node)) {
+    return !/^[a-z]/.test(node.getText());
   } else {
     return false;
   }
