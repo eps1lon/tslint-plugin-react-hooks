@@ -1,3 +1,6 @@
+Fork of `eslint-plugin-react-hooks` that aims to support `tslint`. Development
+paused in favor of `typescript-eslint-parser`.
+
 # `eslint-plugin-react-hooks`
 
 This ESLint plugin enforces the [Rules of Hooks](https://reactjs.org/docs/hooks-rules.html).
