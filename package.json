@@ -27,5 +27,14 @@
   "homepage": "https://reactjs.org/",
   "peerDependencies": {
     "eslint": "^3.0.0 || ^4.0.0 || ^5.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^10.12.18",
+    "tslint": "^5.12.0",
+    "typescript": "^3.2.2"
+  },
+  "scripts": {
+    "dev": "tsc -p tsconfig.json --outDir lib --watch",
+    "test": "tslint --test src/__tests__/**/tslint.json"
   }
 }

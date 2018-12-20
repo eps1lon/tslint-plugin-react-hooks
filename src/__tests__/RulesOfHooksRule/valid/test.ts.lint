@@ -1,0 +1,8 @@
+function useHook() {
+  return 'something-imperative';
+}
+
+// Valid because components can use hooks.
+function ComponentWithHook() {
+  useHook();
+}
