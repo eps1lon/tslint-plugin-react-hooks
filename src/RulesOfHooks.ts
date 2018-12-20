@@ -6,6 +6,7 @@
  */
 
 /* eslint-disable no-for-of-loops/no-for-of-loops */
+import { Rule as ESLintRule } from "eslint";
 import * as ts from "typescript";
 import { isAssignmentExpression } from './utils'
 
@@ -69,12 +70,12 @@ function isInsideComponentOrHook(node: ts.Node): boolean {
 }
 
 export default {
-  create(context) {
-    const codePathReactHooksMapStack = [];
-    const codePathSegmentStack = [];
+  create(context: ESLintRule.RuleContext) {
+    const codePathReactHooksMapStack: Array<Map<ESLintRule.CodePathSegment, ts.Expression[]>> = [];
+    const codePathSegmentStack: ESLintRule.CodePathSegment[] = [];
     return {
       // Maintain code segment path stack as we traverse.
-      onCodePathSegmentStart: segment => codePathSegmentStack.push(segment),
+      onCodePathSegmentStart: (segment: ESLintRule.CodePathSegment) => codePathSegmentStack.push(segment),
       onCodePathSegmentEnd: () => codePathSegmentStack.pop(),
 
       // Maintain code path stack as we traverse.
@@ -84,8 +85,8 @@ export default {
       //
       // Everything is ok if all React Hooks are both reachable from the initial
       // segment and reachable from every final segment.
-      onCodePathEnd(codePath, codePathNode) {
-        const reactHooksMap = codePathReactHooksMapStack.pop();
+      onCodePathEnd(codePath: ESLintRule.CodePath, codePathNode: ts.Node) {
+        const reactHooksMap = codePathReactHooksMapStack.pop()!;
         if (reactHooksMap.size === 0) {
           return;
         }
@@ -115,7 +116,7 @@ export default {
          * Populates `cyclic` with cyclic segments.
          */
 
-        function countPathsFromStart(segment) {
+        function countPathsFromStart(segment: ESLintRule.CodePathSegment) {
           const { cache } = countPathsFromStart;
           let paths = cache.get(segment.id);
 
@@ -177,7 +178,7 @@ export default {
          * Populates `cyclic` with cyclic segments.
          */
 
-        function countPathsToEnd(segment) {
+        function countPathsToEnd(segment: ESLintRule.CodePathSegment) {
           const { cache } = countPathsToEnd;
           let paths = cache.get(segment.id);
 
@@ -239,7 +240,7 @@ export default {
          * so we would return that.
          */
 
-        function shortestPathLengthToStart(segment) {
+        function shortestPathLengthToStart(segment: ESLintRule.CodePathSegment) {
           const { cache } = shortestPathLengthToStart;
           let length = cache.get(segment.id);
 
@@ -560,6 +561,6 @@ function getFunctionName(node: ts.Node): ts.Identifier | undefined {
  * Convenience function for peeking the last item in a stack.
  */
 
-function last<T>(array: T[]): T | undefined {
+function last<T>(array: T[]): T {
   return array[array.length - 1];
 }
