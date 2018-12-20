@@ -55,7 +55,7 @@ function isComponentName(node: ts.Node): boolean {
   }
 }
 
-function isInsideComponentOrHook(node) {
+function isInsideComponentOrHook(node: ts.Node): boolean {
   while (node) {
     const functionName = getFunctionName(node);
     if (functionName) {
