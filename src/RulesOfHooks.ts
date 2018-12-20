@@ -14,7 +14,7 @@
  * character to exclude identifiers like "user".
  */
 
-function isHookName(s) {
+function isHookName(s: string) {
   return /^use[A-Z0-9].*$/.test(s);
 }
 
