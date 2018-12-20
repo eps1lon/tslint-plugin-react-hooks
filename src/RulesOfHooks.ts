@@ -7,6 +7,7 @@
 
 /* eslint-disable no-for-of-loops/no-for-of-loops */
 import * as ts from "typescript";
+import { isAssignmentExpression } from './utils'
 
 "use strict";
 
@@ -478,42 +479,54 @@ export default {
  * same AST nodes with some exceptions to better fit our usecase.
  */
 
-function getFunctionName(node) {
+function getFunctionName(node: ts.Node): ts.Identifier | undefined {
   if (
-    node.type === "FunctionDeclaration" ||
-    (node.type === "FunctionExpression" && node.id)
+    (ts.isFunctionDeclaration(node) || ts.isFunctionExpression(node)) &&
+    node.name
   ) {
     // function useHook() {}
     // const whatever = function useHook() {};
     //
     // Function declaration or function expression names win over any
     // assignment statements or other renames.
-    return node.id;
+    return node.name;
   } else if (
-    node.type === "FunctionExpression" ||
-    node.type === "ArrowFunctionExpression"
+    ts.isFunctionExpression(node) ||
+    ts.isArrowFunction(node)
   ) {
     if (
-      node.parent.type === "VariableDeclarator" &&
-      node.parent.init === node
+      ts.isVariableDeclaration(node.parent) &&
+      node.parent.initializer === node
     ) {
       // const useHook = () => {};
-      return node.parent.id;
-    } else if (
-      node.parent.type === "AssignmentExpression" &&
-      node.parent.right === node &&
-      node.parent.operator === "="
+      if (!ts.isIdentifier(node.parent.name)) {
+        throw new Error('Expected ts.Identifier as the BindingName')
+      }
+      return node.parent.name;
+    } else if ( 
+      isAssignmentExpression(node.parent) &&
+      node.parent.right === node
     ) {
       // useHook = () => {};
+      if (!ts.isIdentifier(node.parent.left)) {
+        throw new Error('Expected an Identifier on the left side of an AssignmentExpression');
+      }
       return node.parent.left;
     } else if (
-      node.parent.type === "Property" &&
-      node.parent.value === node &&
-      !node.parent.computed
+      ts.isPropertyAssignment(node.parent) &&
+      node.parent.initializer === node &&
+      ts.isComputedPropertyName(node.parent.name)
     ) {
       // {useHook: () => {}}
       // {useHook() {}}
-      return node.parent.key;
+      if (!ts.isIdentifier(node.parent.name)) {
+        // eps1lon: I assume getFunctionName is only used to get the name to check against
+        // isHookName so we should support literals that would simply result in false
+        // instead of throwing. Maybe only return undefined but I prefer throws
+        // instead of silent errors
+        throw new Error('Only Identifiers are supported as property names.');
+      }
+      return node.parent.name;
 
       // NOTE: We could also support `ClassProperty` and `MethodDefinition`
       // here to be pedantic. However, hooks in a class are an anti-pattern. So
@@ -522,16 +535,19 @@ function getFunctionName(node) {
       // class {useHook = () => {}}
       // class {useHook() {}}
     } else if (
-      node.parent.type === "AssignmentPattern" &&
-      node.parent.right === node &&
-      !node.parent.computed
+      ts.isBindingElement(node.parent) &&
+      node.parent.initializer === node &&
+      !node.parent.propertyName
     ) {
+      if (!ts.isIdentifier(node.parent.name)) {
+        throw new Error('Expected an Identifier as the name of an BindingElement.');
+      }
       // const {useHook = () => {}} = {};
       // ({useHook = () => {}} = {});
       //
       // Kinda clowny, but we'd said we'd follow spec convention for
       // `IsAnonymousFunctionDefinition()` usage.
-      return node.parent.left;
+      return node.parent.name;
     } else {
       return undefined;
     }
